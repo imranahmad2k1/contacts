@@ -51,7 +51,6 @@ class ContactBook {
 class MyHomePage extends StatelessWidget {
   MyHomePage({super.key});
 
-  final ContactBook cb = ContactBook();
   final contacts = ContactBook().contacts;
 
   @override
@@ -64,14 +63,15 @@ class MyHomePage extends StatelessWidget {
       body: ListView.builder(
         itemCount: contacts.length,
         itemBuilder: (context, index) {
+          final contact = ContactBook().contactAt(atIndex: index)!;
           return ListTile(
-            title: Text(cb.contactAt(atIndex: index)!.name),
+            title: Text(contact.name),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).pushNamed('/new-contact');
+        onPressed: () async {
+          await Navigator.of(context).pushNamed('/new-contact');
         },
         child: const Icon(Icons.add),
       ),
@@ -88,7 +88,6 @@ class AddNewContact extends StatefulWidget {
 
 class _AddNewContactState extends State<AddNewContact> {
   late final TextEditingController _controller;
-  final ContactBook cb = ContactBook();
 
   @override
   void initState() {
@@ -115,7 +114,7 @@ class _AddNewContactState extends State<AddNewContact> {
         TextButton(
             onPressed: () {
               final name = _controller.text;
-              cb.add(name: name);
+              ContactBook().add(name: name);
               Navigator.of(context).pop();
             },
             child: const Text('Add new contact')),
