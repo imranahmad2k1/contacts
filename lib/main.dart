@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -8,7 +9,7 @@ void main() {
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       useMaterial3: true,
     ),
-    home: MyHomePage(),
+    home: const MyHomePage(),
     routes: {
       '/new-contact': (context) => const AddNewContact(),
     },
@@ -16,42 +17,44 @@ void main() {
 }
 
 class Contact {
+  final String id;
   final String name;
 
-  const Contact({required this.name});
+  Contact({required this.name}) : id = const Uuid().v4();
 }
 
-class ContactBook {
+class ContactBook extends ValueNotifier<List<Contact>> {
   static final ContactBook _shared = ContactBook._sharedInstance();
-  ContactBook._sharedInstance();
+  ContactBook._sharedInstance() : super([]);
   factory ContactBook() => _shared;
 
-  List<Contact> get contacts => [];
-
   Contact? contactAt({required int atIndex}) {
-    if (contacts.length > atIndex) {
-      return contacts[atIndex];
+    if (value.length > atIndex) {
+      return value[atIndex];
     }
     return null;
   }
 
   void add({required String name}) {
     final contact = Contact(name: name);
-    contacts.add(contact);
+    value.add(contact);
+    notifyListeners();
+    //we dont need notifylisteners but here we do because
+    //our array.add will add new value
+    //but it will not change value so the inherent notifyListener doesn't get called
   }
 
   void remove({required int atIndex}) {
     final contact = contactAt(atIndex: atIndex);
     if (contact != null) {
-      contacts.remove(contact);
+      value.remove(contact);
+      notifyListeners();
     }
   }
 }
 
 class MyHomePage extends StatelessWidget {
-  MyHomePage({super.key});
-
-  final contacts = ContactBook().contacts;
+  const MyHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -60,12 +63,26 @@ class MyHomePage extends StatelessWidget {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Contacts'),
       ),
-      body: ListView.builder(
-        itemCount: contacts.length,
-        itemBuilder: (context, index) {
-          final contact = ContactBook().contactAt(atIndex: index)!;
-          return ListTile(
-            title: Text(contact.name),
+      body: ValueListenableBuilder(
+        valueListenable: ContactBook(),
+        builder: (BuildContext context, value, Widget? child) {
+          return ListView.builder(
+            itemCount: value.length,
+            itemBuilder: (context, index) {
+              final contact = value[index];
+              return Material(
+                elevation: 6.0,
+                child: Dismissible(
+                  onDismissed: (direction) {
+                    value.remove(contact);
+                  },
+                  key: ValueKey(contact.id),
+                  child: ListTile(
+                    title: Text(contact.name),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
